@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Rental System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--card:#1e293b;--card2:#334155;--accent:#f59e0b;--accent2:#fbbf24;--green:#10b981;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;--text:#f1f5f9;--text2:#94a3b8;--border:#475569;--shadow:0 4px 24px rgba(0,0,0,.4)}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header h1{font-size:20px;display:flex;align-items:center;gap:10px}
+.header h1 span{color:var(--accent)}
+.conn-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:default}
+.conn-cloud{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.conn-local{background:rgba(251,191,36,.15);color:var(--accent2);border:1px solid rgba(251,191,36,.3)}
+.container{max-width:1280px;margin:0 auto;padding:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.stat-label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:700}
+.stat-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.s-car .stat-value{color:var(--blue)}.s-bike .stat-value{color:var(--green)}.s-truck .stat-value{color:var(--purple)}.s-rev .stat-value{color:var(--accent)}
+.toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:200px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none}
+.search:focus{border-color:var(--accent)}
+.filter-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;transition:.2s}
+.filter-btn:hover,.filter-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px}
+.v-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;transition:.2s;position:relative;overflow:hidden}
+.v-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.v-card.rented{border-left:4px solid var(--red)}
+.v-card.available{border-left:4px solid var(--green)}
+.v-badge{position:absolute;top:14px;right:14px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.b-available{background:rgba(16,185,129,.15);color:var(--green)}
+.b-rented{background:rgba(239,68,68,.15);color:var(--red)}
+.v-type{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:4px}
+.v-model{font-size:18px;font-weight:600;margin-bottom:6px}
+.v-plate{font-size:13px;color:var(--cyan);font-family:monospace;margin-bottom:10px}
+.v-rate{font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.v-rate span{font-size:12px;color:var(--text2);font-weight:400}
+.v-extra{font-size:12px;color:var(--text2);margin-bottom:12px}
+.v-btns{display:flex;gap:8px}
+.btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.btn-rent{background:var(--green);color:#000}.btn-rent:hover{opacity:.85}
+.btn-rent:disabled{background:var(--card2);color:var(--text2);cursor:not-allowed}
+.btn-return{background:var(--red);color:#fff}.btn-return:hover{opacity:.85}
+.btn-return:disabled{background:var(--card2);color:var(--text2);cursor:not-allowed}
+.btn-secondary{background:var(--card2);color:var(--text)}.btn-secondary:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:#000}.btn-primary:hover{opacity:.85}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:90%;max-width:440px;box-shadow:var(--shadow)}
+.modal h2{font-size:18px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.modal label{display:block;font-size:13px;color:var(--text2);margin-bottom:4px;margin-top:12px}
+.modal input,.modal select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none}
+.modal input:focus,.modal select:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.receipt{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:14px;font-size:13px}
+.receipt-row{display:flex;justify-content:space-between;padding:4px 0}
+.receipt-row.total{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-weight:700;font-size:15px;color:var(--accent)}
+.history-section{margin-top:24px}
+.history-section h2{font-size:18px;margin-bottom:14px;color:var(--text2)}
+.history-table{width:100%;border-collapse:collapse;font-size:13px}
+.history-table th{text-align:left;padding:10px 12px;background:var(--card2);color:var(--text2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.history-table td{padding:10px 12px;border-bottom:1px solid rgba(71,85,105,.3)}
+.history-table tr:hover td{background:rgba(30,41,59,.5)}
+.badge-car{color:var(--blue)}.badge-bike{color:var(--green)}.badge-truck{color:var(--purple)}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:2000;animation:slideIn .3s;box-shadow:var(--shadow)}
+.toast-success{background:var(--green);color:#000}.toast-error{background:var(--red);color:#fff}.toast-info{background:var(--blue);color:#fff}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{text-align:center;padding:60px 20px;color:var(--text2);font-size:15px}
+@media(max-width:640px){.header h1{font-size:16px}.fleet{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#128663; <span>Vehicle Rental</span> System</h1>
+  <div class="conn-badge" id="connBadge">Connecting...</div>
+</div>
+
+<div class="container">
+  <div class="stats" id="statsGrid">
+    <div class="stat s-car"><div class="stat-label">Cars</div><div class="stat-value" id="sCars">0</div><div class="stat-sub" id="sCarsSub">0 rented</div></div>
+    <div class="stat s-bike"><div class="stat-label">Bikes</div><div class="stat-value" id="sBikes">0</div><div class="stat-sub" id="sBikesSub">0 rented</div></div>
+    <div class="stat s-truck"><div class="stat-label">Trucks</div><div class="stat-value" id="sTrucks">0</div><div class="stat-sub" id="sTrucksSub">0 rented</div></div>
+    <div class="stat s-rev"><div class="stat-label">Revenue</div><div class="stat-value" id="sRevenue">Rs.0</div><div class="stat-sub" id="sRevenueSub">0 rentals</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="searchInput" placeholder="Search by plate, model, or type...">
+    <button class="filter-btn active" data-filter="All">All</button>
+    <button class="filter-btn" data-filter="Car">Cars</button>
+    <button class="filter-btn" data-filter="Bike">Bikes</button>
+    <button class="filter-btn" data-filter="Truck">Trucks</button>
+    <button class="btn btn-primary" onclick="showAddModal()">+ Add Vehicle</button>
+  </div>
+
+  <div class="fleet" id="fleetGrid"></div>
+
+  <div class="history-section">
+    <h2>&#128203; Rental History</h2>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="historyTable">
+        <thead><tr><th>Date</th><th>Vehicle</th><th>Type</th><th>Customer</th><th>Days</th><th>Cost</th><th>Status</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="7" class="empty">No rentals yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rentModal">
+  <div class="modal">
+    <h2>&#128663; Rent Vehicle</h2>
+    <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:4px">
+      <div id="rentVehicleInfo" style="font-weight:600"></div>
+      <div id="rentVehicleRate" style="color:var(--accent);font-size:18px;font-weight:700;margin-top:4px"></div>
+    </div>
+    <label>Customer Name</label>
+    <input id="rentName" placeholder="Enter customer name">
+    <label>Phone Number</label>
+    <input id="rentPhone" placeholder="Enter phone number">
+    <label>Rental Days</label>
+    <input id="rentDays" type="number" min="1" value="1" oninput="updateRentCost()">
+    <label>Payment Method</label>
+    <select id="rentPayment"><option>Cash</option><option>Card</option><option>Online</option></select>
+    <div class="receipt" id="rentReceipt" style="display:none">
+      <div class="receipt-row"><span>Rate/Day</span><span id="rrRate">-</span></div>
+      <div class="receipt-row"><span>Days</span><span id="rrDays">-</span></div>
+      <div class="receipt-row"><span>Discount</span><span id="rrDiscount">-</span></div>
+      <div class="receipt-row total"><span>Total</span><span id="rrTotal">-</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('rentModal')">Cancel</button>
+      <button class="btn btn-rent" id="rentConfirmBtn" onclick="confirmRent()">Confirm Rental</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="returnModal">
+  <div class="modal">
+    <h2>&#9989; Return Vehicle</h2>
+    <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:4px">
+      <div id="returnVehicleInfo" style="font-weight:600"></div>
+    </div>
+    <div class="receipt" id="returnReceipt">
+      <div class="receipt-row"><span>Customer</span><span id="rrCust">-</span></div>
+      <div class="receipt-row"><span>Phone</span><span id="rrPhone">-</span></div>
+      <div class="receipt-row"><span>Rented On</span><span id="rrDate">-</span></div>
+      <div class="receipt-row"><span>Days</span><span id="rrRDays">-</span></div>
+      <div class="receipt-row"><span>Payment</span><span id="rrPay">-</span></div>
+      <div class="receipt-row total"><span>Total Charged</span><span id="rrCharged">-</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('returnModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="printReceipt()">&#128424; Print</button>
+      <button class="btn btn-return" onclick="confirmReturn()">Confirm Return</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h2>+ Add Vehicle</h2>
+    <label>Plate Number</label>
+    <input id="addPlate" placeholder="e.g. KHI-1234">
+    <label>Model</label>
+    <input id="addModel" placeholder="e.g. Toyota Corolla">
+    <label>Type</label>
+    <select id="addType"><option value="Car">Car</option><option value="Bike">Bike</option><option value="Truck">Truck</option></select>
+    <label>Base Rate (Rs./day)</label>
+    <input id="addRate" type="number" min="100" value="2000">
+    <label id="addLoadLabel" style="display:none">Extra Load Fee (Rs./day)</label>
+    <input id="addLoadFee" type="number" min="0" value="500" style="display:none">
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAdd()">Add Vehicle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let vehicles=[], history=[], apiMode=false, rentTarget=null, returnTarget=null;
+const API='/api';
+
+document.getElementById('addType').addEventListener('change',function(){
+  const show=this.value==='Truck';
+  document.getElementById('addLoadLabel').style.display=show?'block':'none';
+  document.getElementById('addLoadFee').style.display=show?'block':'none';
+});
+
+async function init(){
+  try{
+    const r=await fetch(API+'/vehicles');
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    vehicles=data.vehicles||[];
+    history=data.history||[];
+    apiMode=true;
+    setBadge(true);
+  }catch(e){
+    apiMode=false;
+    loadLocal();
+    setBadge(false);
+  }
+  render();
+}
+
+function setBadge(cloud){
+  const b=document.getElementById('connBadge');
+  b.className='conn-badge '+(cloud?'conn-cloud':'conn-local');
+  b.textContent=cloud?'Cloud Mode':'Local Mode';
+}
+
+function loadLocal(){
+  try{
+    vehicles=JSON.parse(localStorage.getItem('vr_vehicles'))||[];
+    history=JSON.parse(localStorage.getItem('vr_history'))||[];
+  }catch(e){vehicles=[];history=[];}
+  if(!vehicles.length) seedData();
+}
+
+function seedData(){
+  vehicles=[
+    {plateNumber:'KHI-1001',model:'Toyota Corolla',type:'Car',baseRatePerDay:5000,isRented:false,extraLoadFee:0},
+    {plateNumber:'KHI-1002',model:'Honda Civic',type:'Car',baseRatePerDay:6000,isRented:false,extraLoadFee:0},
+    {plateNumber:'KHI-1003',model:'Suzuki Alto',type:'Car',baseRatePerDay:3000,isRented:false,extraLoadFee:0},
+    {plateNumber:'LHR-2001',model:'Honda CD-70',type:'Bike',baseRatePerDay:1200,isRented:false,extraLoadFee:0},
+    {plateNumber:'LHR-2002',model:'Yamaha YBR 125',type:'Bike',baseRatePerDay:1800,isRented:false,extraLoadFee:0},
+    {plateNumber:'LHR-2003',model:'Honda CB 150',type:'Bike',baseRatePerDay:2200,isRented:false,extraLoadFee:0},
+    {plateNumber:'ISB-3001',model:'Hino Ranger',type:'Truck',baseRatePerDay:8000,isRented:false,extraLoadFee:1500},
+    {plateNumber:'ISB-3002',model:'Mazda Titan',type:'Truck',baseRatePerDay:7500,isRented:false,extraLoadFee:1200},
+    {plateNumber:'ISB-3003',model:'Isuzu NPR',type:'Truck',baseRatePerDay:9000,isRented:false,extraLoadFee:2000},
+    {plateNumber:'PEW-1004',model:'Toyota Fortuner',type:'Car',baseRatePerDay:8000,isRented:false,extraLoadFee:0},
+  ];
+  saveLocal();
+}
+
+function saveLocal(){
+  if(!apiMode){
+    try{localStorage.setItem('vr_vehicles',JSON.stringify(vehicles));}catch(e){}
+    try{localStorage.setItem('vr_history',JSON.stringify(history));}catch(e){}
+  }
+}
+
+async function syncAPI(){
+  if(!apiMode)return;
+  try{await fetch(API+'/vehicles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicles,history})});}catch(e){}
+}
+
+function calcCost(type,rate,days,loadFee=0){
+  let cost=(rate+(type==='Truck'?loadFee:0))*days;
+  let discount=0;
+  if(type==='Car'&&days>=7){discount=cost*0.1;cost-=discount;}
+  return{cost,discount};
+}
+
+function render(){
+  renderStats();renderFleet();renderHistory();
+}
+
+function renderStats(){
+  const cars=vehicles.filter(v=>v.type==='Car'),bikes=vehicles.filter(v=>v.type==='Bike'),trucks=vehicles.filter(v=>v.type==='Truck');
+  const rentedCars=cars.filter(v=>v.isRented).length,rentedBikes=bikes.filter(v=>v.isRented).length,rentedTrucks=trucks.filter(v=>v.isRented).length;
+  const totalRev=history.reduce((s,h)=>s+h.cost,0);
+  document.getElementById('sCars').textContent=cars.length;
+  document.getElementById('sCarsSub').textContent=rentedCars+' rented';
+  document.getElementById('sBikes').textContent=bikes.length;
+  document.getElementById('sBikesSub').textContent=rentedBikes+' rented';
+  document.getElementById('sTrucks').textContent=trucks.length;
+  document.getElementById('sTrucksSub').textContent=rentedTrucks+' rented';
+  document.getElementById('sRevenue').textContent='Rs.'+totalRev.toLocaleString();
+  document.getElementById('sRevenueSub').textContent=history.length+' rentals';
+}
+
+function renderFleet(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const f=document.querySelector('.filter-btn.active').dataset.filter;
+  let filtered=vehicles.filter(v=>{
+    if(f!=='All'&&v.type!==f)return false;
+    if(q&&!v.plateNumber.toLowerCase().includes(q)&&!v.model.toLowerCase().includes(q)&&!v.type.toLowerCase().includes(q))return false;
+    return true;
+  });
+  const grid=document.getElementById('fleetGrid');
+  if(!filtered.length){grid.innerHTML='<div class="empty">No vehicles match your search.</div>';return;}
+  grid.innerHTML=filtered.map(v=>{
+    const cost=calcCost(v.type,v.baseRatePerDay,1,v.extraLoadFee);
+    return`<div class="v-card ${v.isRented?'rented':'available'}">
+      <div class="v-badge ${v.isRented?'b-rented':'b-available'}">${v.isRented?'RENTED':'AVAILABLE'}</div>
+      <div class="v-type">${v.type}</div>
+      <div class="v-model">${v.model}</div>
+      <div class="v-plate">${v.plateNumber}</div>
+      <div class="v-rate">Rs.${v.baseRatePerDay.toLocaleString()}<span>/day</span></div>
+      ${v.type==='Truck'?`<div class="v-extra">+Rs.${v.extraLoadFee.toLocaleString()} load fee/day</div>`:
+        v.type==='Car'?`<div class="v-extra">10% off for 7+ days</div>`:`<div class="v-extra">No discount</div>`}
+      <div class="v-btns">
+        <button class="btn btn-rent" ${v.isRented?'disabled':''} onclick="showRentModal('${v.plateNumber}')">Rent</button>
+        <button class="btn btn-return" ${!v.isRented?'disabled':''} onclick="showReturnModal('${v.plateNumber}')">Return</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const tbody=document.getElementById('historyBody');
+  if(!history.length){tbody.innerHTML='<tr><td colspan="7" class="empty">No rentals yet</td></tr>';return;}
+  tbody.innerHTML=[...history].reverse().map(h=>`<tr>
+    <td>${h.date}</td>
+    <td>${h.model}</td>
+    <td class="badge-${h.type.toLowerCase()}">${h.type}</td>
+    <td>${h.customer}</td>
+    <td>${h.days}</td>
+    <td style="color:var(--accent);font-weight:600">Rs.${h.cost.toLocaleString()}</td>
+    <td>${h.status==='active'?'<span style="color:var(--red)">Active</span>':'<span style="color:var(--green)">Returned</span>'}</td>
+  </tr>`).join('');
+}
+
+document.querySelectorAll('.filter-btn').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    renderFleet();
+  });
+});
+document.getElementById('searchInput').addEventListener('input',renderFleet);
+
+function showRentModal(plate){
+  const v=vehicles.find(x=>x.plateNumber===plate);if(!v)return;
+  rentTarget=v;
+  document.getElementById('rentVehicleInfo').textContent=v.model+' ('+v.type+') — '+v.plateNumber;
+  document.getElementById('rentVehicleRate').textContent='Rs.'+v.baseRatePerDay.toLocaleString()+'/day';
+  document.getElementById('rentName').value='';
+  document.getElementById('rentPhone').value='';
+  document.getElementById('rentDays').value='1';
+  document.getElementById('rentPayment').value='Cash';
+  document.getElementById('rentReceipt').style.display='none';
+  document.getElementById('rentModal').classList.add('show');
+}
+
+function updateRentCost(){
+  if(!rentTarget)return;
+  const days=parseInt(document.getElementById('rentDays').value)||0;
+  if(days<1){document.getElementById('rentReceipt').style.display='none';return;}
+  const c=calcCost(rentTarget.type,rentTarget.baseRatePerDay,days,rentTarget.extraLoadFee);
+  document.getElementById('rrRate').textContent='Rs.'+rentTarget.baseRatePerDay.toLocaleString();
+  document.getElementById('rrDays').textContent=days;
+  document.getElementById('rrDiscount').textContent=c.discount>0?'-Rs.'+c.discount.toLocaleString()+' (10%)':'None';
+  document.getElementById('rrTotal').textContent='Rs.'+c.cost.toLocaleString();
+  document.getElementById('rentReceipt').style.display='block';
+}
+
+function confirmRent(){
+  if(!rentTarget)return;
+  const name=document.getElementById('rentName').value.trim();
+  const phone=document.getElementById('rentPhone').value.trim();
+  const days=parseInt(document.getElementById('rentDays').value)||0;
+  const pay=document.getElementById('rentPayment').value;
+  if(!name){toast('Please enter customer name','error');return;}
+  if(!phone){toast('Please enter phone number','error');return;}
+  if(days<1){toast('Days must be at least 1','error');return;}
+  const c=calcCost(rentTarget.type,rentTarget.baseRatePerDay,days,rentTarget.extraLoadFee);
+  rentTarget.isRented=true;
+  const now=new Date();
+  history.push({
+    plate:rentTarget.plateNumber,model:rentTarget.model,type:rentTarget.type,
+    customer:name,phone,days,cost:c.cost,discount:c.discount,payment:pay,
+    date:now.toLocaleDateString()+' '+now.toLocaleTimeString(),
+    status:'active',rentedAt:now.toISOString()
+  });
+  saveLocal();syncAPI();render();
+  closeModal('rentModal');
+  toast(rentTarget.model+' rented for '+days+' days — Rs.'+c.cost.toLocaleString(),'success');
+  rentTarget=null;
+}
+
+function showReturnModal(plate){
+  const v=vehicles.find(x=>x.plateNumber===plate);if(!v)return;
+  const active=[...history].reverse().find(h=>h.plate===plate&&h.status==='active');
+  if(!active){toast('No active rental found','error');return;}
+  returnTarget={vehicle:v,rental:active};
+  document.getElementById('returnVehicleInfo').textContent=v.model+' ('+v.type+') — '+v.plateNumber;
+  document.getElementById('rrCust').textContent=active.customer;
+  document.getElementById('rrPhone').textContent=active.phone;
+  document.getElementById('rrDate').textContent=active.date;
+  document.getElementById('rrRDays').textContent=active.days;
+  document.getElementById('rrPay').textContent=active.payment;
+  document.getElementById('rrCharged').textContent='Rs.'+active.cost.toLocaleString();
+  document.getElementById('returnModal').classList.add('show');
+}
+
+function confirmReturn(){
+  if(!returnTarget)return;
+  returnTarget.vehicle.isRented=false;
+  returnTarget.rental.status='returned';
+  returnTarget.rental.returnedAt=new Date().toISOString();
+  saveLocal();syncAPI();render();
+  closeModal('returnModal');
+  toast(returnTarget.vehicle.model+' returned successfully','success');
+  returnTarget=null;
+}
+
+function printReceipt(){
+  const r=returnTarget;if(!r)return;
+  const w=window.open('','','width=400,height=500');
+  w.document.write(`<html><head><title>Receipt</title><style>body{font-family:monospace;padding:20px;font-size:13px}h2{text-align:center;font-size:16px}.row{display:flex;justify-content:space-between;padding:3px 0}.total{border-top:2px solid #000;margin-top:8px;padding-top:8px;font-weight:bold;font-size:15px}</style></head><body>
+  <h2>&#128663; Vehicle Rental Receipt</h2><hr>
+  <div class="row"><span>Vehicle:</span><span>${r.vehicle.model}</span></div>
+  <div class="row"><span>Plate:</span><span>${r.vehicle.plateNumber}</span></div>
+  <div class="row"><span>Type:</span><span>${r.vehicle.type}</span></div>
+  <div class="row"><span>Customer:</span><span>${r.rental.customer}</span></div>
+  <div class="row"><span>Phone:</span><span>${r.rental.phone}</span></div>
+  <div class="row"><span>Date:</span><span>${r.rental.date}</span></div>
+  <div class="row"><span>Days:</span><span>${r.rental.days}</span></div>
+  <div class="row"><span>Rate/Day:</span><span>Rs.${r.vehicle.baseRatePerDay}</span></div>
+  ${r.rental.discount>0?`<div class="row"><span>Discount:</span><span>-Rs.${r.rental.discount} (10%)</span></div>`:''}
+  <div class="row total"><span>TOTAL:</span><span>Rs.${r.rental.cost.toLocaleString()}</span></div>
+  <div class="row"><span>Payment:</span><span>${r.rental.payment}</span></div>
+  <hr><p style="text-align:center;margin-top:12px">Thank you for your rental!</p>
+  </body></html>`);
+  w.document.close();w.print();
+}
+
+function showAddModal(){
+  document.getElementById('addPlate').value='';
+  document.getElementById('addModel').value='';
+  document.getElementById('addType').value='Car';
+  document.getElementById('addRate').value='2000';
+  document.getElementById('addLoadFee').value='500';
+  document.getElementById('addLoadLabel').style.display='none';
+  document.getElementById('addLoadFee').style.display='none';
+  document.getElementById('addModal').classList.add('show');
+}
+
+function confirmAdd(){
+  const plate=document.getElementById('addPlate').value.trim();
+  const model=document.getElementById('addModel').value.trim();
+  const type=document.getElementById('addType').value;
+  const rate=parseFloat(document.getElementById('addRate').value)||0;
+  const loadFee=parseFloat(document.getElementById('addLoadFee').value)||0;
+  if(!plate){toast('Enter plate number','error');return;}
+  if(!model){toast('Enter model name','error');return;}
+  if(vehicles.some(v=>v.plateNumber===plate)){toast('Plate already exists','error');return;}
+  if(rate<100){toast('Rate must be at least Rs.100','error');return;}
+  vehicles.push({plateNumber:plate,model,type,baseRatePerDay:rate,isRented:false,extraLoadFee:type==='Truck'?loadFee:0});
+  saveLocal();syncAPI();render();
+  closeModal('addModal');
+  toast(model+' added to fleet','success');
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function toast(msg,type='info'){
+  const t=document.createElement('div');t.className='toast toast-'+type;t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
+});
+
+init();
+</script>
+</body>
+</html>
