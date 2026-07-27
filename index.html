@@ -116,6 +116,42 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </table>
     </div>
   </div>
+
+  <!-- Fuel Tracking -->
+  <div class="history-section" style="margin-top:32px;">
+    <h2>Fuel Log</h2>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="fuelVehicle" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <input type="number" id="fuelLiters" placeholder="Liters" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100px;">
+      <input type="number" id="fuelCost" placeholder="Cost (Rs)" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:120px;">
+      <button class="btn btn-primary" onclick="addFuelEntry()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;">Log Fuel</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="fuelTable">
+        <thead><tr><th>Date</th><th>Vehicle</th><th>Liters</th><th>Cost</th><th>Cost/Liter</th></tr></thead>
+        <tbody id="fuelBody"><tr><td colspan="5" class="empty">No fuel entries yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Maintenance Log -->
+  <div class="history-section" style="margin-top:32px;">
+    <h2>Maintenance Log</h2>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="maintVehicle" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <select id="maintType" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option><option>Engine Tune-up</option><option>Battery Replace</option><option>General Service</option>
+      </select>
+      <input type="number" id="maintCost" placeholder="Cost (Rs)" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:120px;">
+      <button class="btn btn-primary" onclick="addMaintenanceEntry()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;">Log Service</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="maintTable">
+        <thead><tr><th>Date</th><th>Vehicle</th><th>Service</th><th>Cost</th></tr></thead>
+        <tbody id="maintBody"><tr><td colspan="4" class="empty">No maintenance entries yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="rentModal">
@@ -468,7 +504,56 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
 });
 
+// ── Fuel Tracking ──
+let fuelEntries=JSON.parse(localStorage.getItem('vr-fuel')||'[]');
+let maintEntries=JSON.parse(localStorage.getItem('vr-maint')||'[]');
+
+function populateSelects(){
+  const sel1=document.getElementById('fuelVehicle');
+  const sel2=document.getElementById('maintVehicle');
+  if(!sel1||!sel2||!vehicles.length)return;
+  const opts=vehicles.map(v=>'<option value="'+v.plateNumber+'">'+v.model+' ('+v.plateNumber+')</option>').join('');
+  sel1.innerHTML=opts;sel2.innerHTML=opts;
+}
+
+function addFuelEntry(){
+  const plate=document.getElementById('fuelVehicle').value;
+  const liters=parseFloat(document.getElementById('fuelLiters').value);
+  const cost=parseFloat(document.getElementById('fuelCost').value);
+  if(!plate||!liters||!cost){toast('Fill all fields','error');return;}
+  fuelEntries.push({date:new Date().toLocaleDateString(),plate,liters,cost,cpa:(cost/liters).toFixed(2)});
+  localStorage.setItem('vr-fuel',JSON.stringify(fuelEntries));
+  document.getElementById('fuelLiters').value='';document.getElementById('fuelCost').value='';
+  renderFuel();toast('Fuel entry logged','success');
+}
+
+function renderFuel(){
+  const tbody=document.getElementById('fuelBody');
+  if(!fuelEntries.length){tbody.innerHTML='<tr><td colspan="5" class="empty">No fuel entries yet</td></tr>';return;}
+  tbody.innerHTML=fuelEntries.slice(-20).reverse().map(f=>'<tr><td>'+f.date+'</td><td>'+f.plate+'</td><td>'+f.liters+'L</td><td>Rs.'+f.cost.toLocaleString()+'</td><td>Rs.'+f.cpa+'</td></tr>').join('');
+}
+
+function addMaintenanceEntry(){
+  const plate=document.getElementById('maintVehicle').value;
+  const type=document.getElementById('maintType').value;
+  const cost=parseFloat(document.getElementById('maintCost').value);
+  if(!plate||!cost){toast('Fill all fields','error');return;}
+  maintEntries.push({date:new Date().toLocaleDateString(),plate,type,cost});
+  localStorage.setItem('vr-maint',JSON.stringify(maintEntries));
+  document.getElementById('maintCost').value='';
+  renderMaintenance();toast('Maintenance entry logged','success');
+}
+
+function renderMaintenance(){
+  const tbody=document.getElementById('maintBody');
+  if(!maintEntries.length){tbody.innerHTML='<tr><td colspan="4" class="empty">No maintenance entries yet</td></tr>';return;}
+  tbody.innerHTML=maintEntries.slice(-20).reverse().map(m=>'<tr><td>'+m.date+'</td><td>'+m.plate+'</td><td>'+m.type+'</td><td>Rs.'+m.cost.toLocaleString()+'</td></tr>').join('');
+}
+
 init();
+populateSelects();
+renderFuel();
+renderMaintenance();
 </script>
 </body>
 </html>
