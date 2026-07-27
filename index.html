@@ -152,6 +152,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </table>
     </div>
   </div>
+
+  <!-- Vehicle Comparison -->
+  <div class="history-section" style="margin-top:32px;">
+    <h2>Vehicle Comparison</h2>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:14px;">Select two vehicles to compare side by side.</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="cmpVehicle1" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <span style="color:var(--text2);line-height:36px;">vs</span>
+      <select id="cmpVehicle2" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <button onclick="compareVehicles()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;">Compare</button>
+    </div>
+    <div id="comparisonBody"></div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="rentModal">
@@ -554,6 +567,53 @@ init();
 populateSelects();
 renderFuel();
 renderMaintenance();
+
+// ── Vehicle Comparison ──
+function populateComparisonSelects(){
+  const s1=document.getElementById('cmpVehicle1');
+  const s2=document.getElementById('cmpVehicle2');
+  if(!s1||!s2||!vehicles.length)return;
+  const opts=vehicles.map(v=>'<option value="'+v.plateNumber+'">'+v.model+'</option>').join('');
+  s1.innerHTML=opts;s2.innerHTML=opts;
+  if(vehicles.length>1)s2.selectedIndex=1;
+}
+
+function compareVehicles(){
+  const p1=document.getElementById('cmpVehicle1').value;
+  const p2=document.getElementById('cmpVehicle2').value;
+  const v1=vehicles.find(v=>v.plateNumber===p1);
+  const v2=vehicles.find(v=>v.plateNumber===p2);
+  if(!v1||!v2){toast('Select two vehicles','error');return;}
+
+  const v1Fuel=fuelEntries.filter(f=>f.plate===p1);
+  const v2Fuel=fuelEntries.filter(f=>f.plate===p2);
+  const v1Maint=maintEntries.filter(m=>m.plate===p1);
+  const v2Maint=maintEntries.filter(m=>m.plate===p2);
+
+  const totalFuelCost=(arr)=>arr.reduce((s,f)=>s+f.cost,0);
+  const totalMaintCost=(arr)=>arr.reduce((s,m)=>s+m.cost,0);
+  const rentalCount=(v)=>history.filter(h=>h.vehicle&&h.vehicle.plateNumber===v.plateNumber).length;
+
+  document.getElementById('comparisonBody').innerHTML=`
+    <table class="history-table">
+      <thead><tr><th>Metric</th><th>${v1.model}</th><th>${v2.model}</th></tr></thead>
+      <tbody>
+        <tr><td>Plate</td><td>${v1.plateNumber}</td><td>${v2.plateNumber}</td></tr>
+        <tr><td>Type</td><td>${v1.type}</td><td>${v2.type}</td></tr>
+        <tr><td>Rate/Day</td><td>Rs.${v1.baseRatePerDay}</td><td>Rs.${v2.baseRatePerDay}</td></tr>
+        <tr><td>Status</td><td>${v1.isRented?'Rented':'Available'}</td><td>${v2.isRented?'Rented':'Available'}</td></tr>
+        <tr><td>Total Rentals</td><td>${rentalCount(v1)}</td><td>${rentalCount(v2)}</td></tr>
+        <tr><td>Fuel Cost</td><td>Rs.${totalFuelCost(v1Fuel).toLocaleString()}</td><td>Rs.${totalFuelCost(v2Fuel).toLocaleString()}</td></tr>
+        <tr><td>Fuel Entries</td><td>${v1Fuel.length}</td><td>${v2Fuel.length}</td></tr>
+        <tr><td>Maintenance Cost</td><td>Rs.${totalMaintCost(v1Maint).toLocaleString()}</td><td>Rs.${totalMaintCost(v2Maint).toLocaleString()}</td></tr>
+        <tr><td>Service Entries</td><td>${v1Maint.length}</td><td>${v2Maint.length}</td></tr>
+      </tbody>
+    </table>`;
+
+  setTimeout(populateComparisonSelects,0);
+}
+
+populateComparisonSelects();
 </script>
 </body>
 </html>
