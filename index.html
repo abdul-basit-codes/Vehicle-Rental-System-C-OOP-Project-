@@ -205,6 +205,20 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </table>
     </div>
   </div>
+
+  <!-- Trip Cost Calculator -->
+  <div class="history-section" style="margin-top:32px;">
+    <h2>Trip Cost Calculator</h2>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:14px;">Estimate trip expenses based on distance, fuel, and rental costs.</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="tripVehicle" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <input type="number" id="tripDistance" placeholder="Distance (km)" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:120px;">
+      <input type="number" id="tripDays" placeholder="Days" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:80px;">
+      <input type="number" id="tripFuelPrice" placeholder="Fuel Rs/L" value="272" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100px;">
+      <button onclick="calculateTrip()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;">Calculate</button>
+    </div>
+    <div id="tripResult"></div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="rentModal">
@@ -730,6 +744,46 @@ populateReviewSelect();
 populateInsuranceSelect();
 renderReviews();
 renderInsurance();
+
+// ── Trip Calculator ──
+function populateTripSelect(){
+  const sel=document.getElementById('tripVehicle');
+  if(!sel||!vehicles.length)return;
+  sel.innerHTML=vehicles.map(v=>'<option value="'+v.plateNumber+'" data-rate="'+v.baseRatePerDay+'">'+v.model+' (Rs.'+v.baseRatePerDay+'/day)</option>').join('');
+}
+
+function calculateTrip(){
+  const plate=document.getElementById('tripVehicle').value;
+  const dist=parseFloat(document.getElementById('tripDistance').value);
+  const days=parseInt(document.getElementById('tripDays').value);
+  const fuelPrice=parseFloat(document.getElementById('tripFuelPrice').value);
+  if(!plate||!dist||!days){toast('Fill all trip fields','error');return;}
+
+  const v=vehicles.find(v=>v.plateNumber===plate);
+  if(!v)return;
+
+  const rentalCost=v.baseRatePerDay*days;
+  const avgKmPerLiter=12;
+  const fuelLiters=dist/avgKmPerLiter;
+  const fuelCost=fuelLiters*fuelPrice;
+  const total=rentalCost+fuelCost;
+
+  document.getElementById('tripResult').innerHTML=`
+    <table class="history-table">
+      <thead><tr><th>Item</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Vehicle</td><td>${v.model} (${v.plateNumber})</td></tr>
+        <tr><td>Duration</td><td>${days} day${days>1?'s':''}</td></tr>
+        <tr><td>Distance</td><td>${dist} km</td></tr>
+        <tr><td>Rental Cost (${v.baseRatePerDay}x${days})</td><td>Rs.${rentalCost.toLocaleString()}</td></tr>
+        <tr><td>Fuel Cost (${fuelLiters.toFixed(1)}L x Rs.${fuelPrice})</td><td>Rs.${fuelCost.toLocaleString()}</td></tr>
+        <tr style="font-weight:700;background:var(--card);"><td>Total Estimated Cost</td><td style="color:var(--accent);font-size:18px;">Rs.${total.toLocaleString()}</td></tr>
+      </tbody>
+    </table>`;
+  toast('Trip cost calculated');
+}
+
+populateTripSelect();
 </script>
 </body>
 </html>
