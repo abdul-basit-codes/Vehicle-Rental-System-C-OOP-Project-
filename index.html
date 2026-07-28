@@ -165,6 +165,46 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     </div>
     <div id="comparisonBody"></div>
   </div>
+
+  <!-- Customer Reviews -->
+  <div class="history-section" style="margin-top:32px;">
+    <h2>Customer Reviews</h2>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="revVehicle" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <input type="text" id="revName" placeholder="Your Name" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:140px;">
+      <select id="revRating" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        <option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Average</option><option value="2">2 - Poor</option><option value="1">1 - Terrible</option>
+      </select>
+      <input type="text" id="revComment" placeholder="Review comment..." style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:220px;">
+      <button onclick="addReview()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;">Submit Review</button>
+    </div>
+    <div id="avgRating" style="font-size:14px;margin-bottom:12px;color:var(--text2);"></div>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="revTable">
+        <thead><tr><th>Date</th><th>Vehicle</th><th>Customer</th><th>Rating</th><th>Comment</th></tr></thead>
+        <tbody id="revBody"><tr><td colspan="5" class="empty">No reviews yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Insurance Details -->
+  <div class="history-section" style="margin-top:32px;">
+    <h2>Insurance Details</h2>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <select id="insVehicle" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"></select>
+      <input type="text" id="insProvider" placeholder="Provider" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:140px;">
+      <input type="text" id="insPolicy" placeholder="Policy #" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:130px;">
+      <input type="number" id="insPremium" placeholder="Premium/yr" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:120px;">
+      <input type="date" id="insExpiry" style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      <button onclick="addInsurance()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;">Add Insurance</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="insTable">
+        <thead><tr><th>Vehicle</th><th>Provider</th><th>Policy #</th><th>Premium/yr</th><th>Expiry</th><th>Status</th></tr></thead>
+        <tbody id="insBody"><tr><td colspan="6" class="empty">No insurance records</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="rentModal">
@@ -614,6 +654,82 @@ function compareVehicles(){
 }
 
 populateComparisonSelects();
+
+// ── Customer Reviews ──
+let reviews=JSON.parse(localStorage.getItem('vr-reviews')||'[]');
+
+function populateReviewSelect(){
+  const sel=document.getElementById('revVehicle');
+  if(!sel||!vehicles.length)return;
+  sel.innerHTML=vehicles.map(v=>'<option value="'+v.plateNumber+'">'+v.model+'</option>').join('');
+}
+
+function addReview(){
+  const plate=document.getElementById('revVehicle').value;
+  const name=document.getElementById('revName').value.trim();
+  const rating=parseInt(document.getElementById('revRating').value);
+  const comment=document.getElementById('revComment').value.trim();
+  if(!plate||!name){toast('Fill name and select vehicle','error');return;}
+  reviews.push({date:new Date().toLocaleDateString(),plate,name,rating,comment});
+  localStorage.setItem('vr-reviews',JSON.stringify(reviews));
+  document.getElementById('revName').value='';document.getElementById('revComment').value='';
+  renderReviews();toast('Review submitted','success');
+}
+
+function renderReviews(){
+  const tbody=document.getElementById('revBody');
+  const avgDiv=document.getElementById('avgRating');
+  if(!reviews.length){
+    tbody.innerHTML='<tr><td colspan="5" class="empty">No reviews yet</td></tr>';
+    avgDiv.textContent='';return;
+  }
+  const avg=reviews.reduce((s,r)=>s+r.rating,0)/reviews.length;
+  avgDiv.innerHTML='<strong>Average Rating: '+avg.toFixed(1)+'/5</strong> ('+reviews.length+' reviews)';
+  tbody.innerHTML=reviews.slice(-20).reverse().map(r=>{
+    const stars='&#9733;'.repeat(r.rating)+'&#9734;'.repeat(5-r.rating);
+    return '<tr><td>'+r.date+'</td><td>'+r.plate+'</td><td>'+r.name+'</td><td>'+stars+'</td><td>'+(r.comment||'-')+'</td></tr>';
+  }).join('');
+}
+
+// ── Insurance ──
+let insuranceRecords=JSON.parse(localStorage.getItem('vr-insurance')||'[]');
+
+function populateInsuranceSelect(){
+  const sel=document.getElementById('insVehicle');
+  if(!sel||!vehicles.length)return;
+  sel.innerHTML=vehicles.map(v=>'<option value="'+v.plateNumber+'">'+v.model+'</option>').join('');
+}
+
+function addInsurance(){
+  const plate=document.getElementById('insVehicle').value;
+  const provider=document.getElementById('insProvider').value.trim();
+  const policy=document.getElementById('insPolicy').value.trim();
+  const premium=parseFloat(document.getElementById('insPremium').value);
+  const expiry=document.getElementById('insExpiry').value;
+  if(!plate||!provider||!policy||!premium||!expiry){toast('Fill all insurance fields','error');return;}
+  insuranceRecords.push({plate,provider,policy,premium,expiry});
+  localStorage.setItem('vr-insurance',JSON.stringify(insuranceRecords));
+  document.getElementById('insProvider').value='';document.getElementById('insPolicy').value='';
+  document.getElementById('insPremium').value='';document.getElementById('insExpiry').value='';
+  renderInsurance();toast('Insurance record added','success');
+}
+
+function renderInsurance(){
+  const tbody=document.getElementById('insBody');
+  if(!insuranceRecords.length){
+    tbody.innerHTML='<tr><td colspan="6" class="empty">No insurance records</td></tr>';return;
+  }
+  const today=new Date().toISOString().slice(0,10);
+  tbody.innerHTML=insuranceRecords.map(i=>{
+    const expired=i.expiry<today;
+    return '<tr><td>'+i.plate+'</td><td>'+i.provider+'</td><td>'+i.policy+'</td><td>Rs.'+i.premium.toLocaleString()+'</td><td>'+i.expiry+'</td><td style="color:'+(expired?'var(--red)':'var(--green)')+'">'+(expired?'Expired':'Active')+'</td></tr>';
+  }).join('');
+}
+
+populateReviewSelect();
+populateInsuranceSelect();
+renderReviews();
+renderInsurance();
 </script>
 </body>
 </html>
